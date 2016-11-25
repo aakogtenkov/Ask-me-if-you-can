@@ -14,34 +14,34 @@ from scipy.optimize import minimize_scalar
 
 # **Точное решение задачи о разделении облаков**
 
-# In[3]:
+# In[88]:
 
 def create_clouds(POINTS_NUMBER):
-    MU_X_1 = -numpy.random.uniform(3, 10)
-    MU_X_2 = numpy.random.uniform(3, 10)
-    MU_Y_1 = numpy.random.uniform(-3, 10)
-    MU_Y_2 = numpy.random.uniform(-10, 3)
+    MU_X_1 = -5
+    MU_X_2 = 5
+    MU_Y_1 = 3.5
+    MU_Y_2 = -3
     SIGMA = 5
     first_cloud = numpy.array([numpy.random.normal(MU_X_1, SIGMA, POINTS_NUMBER), 
-                           numpy.random.normal(MU_Y_1, SIGMA, POINTS_NUMBER),
-                          [1] * POINTS_NUMBER])
+                               numpy.random.normal(MU_Y_1, SIGMA, POINTS_NUMBER),
+                               [1] * POINTS_NUMBER])
     pyplot.scatter(first_cloud[0], first_cloud[1], 28, "red")
     second_cloud = numpy.array([numpy.random.normal(MU_X_2, SIGMA, POINTS_NUMBER), 
-                            numpy.random.normal(MU_Y_2, SIGMA, POINTS_NUMBER),
-                           [1] * POINTS_NUMBER])
+                                numpy.random.normal(MU_Y_2, SIGMA, POINTS_NUMBER),
+                                [1] * POINTS_NUMBER])
     pyplot.scatter(second_cloud[0], second_cloud[1], 28, "blue")
     return first_cloud, second_cloud
 
 
-# In[4]:
+# In[79]:
 
-def draw_line(w, MIN_X, MAX_X, color = "b"):
-    Point1 = [MIN_X, (-w[2] - w[0] * MIN_X) / w[1]]
-    Point2 = [MAX_X, (-w[2] - w[0] * MAX_X) / w[1]]
-    pyplot.plot([Point1[0], Point2[0]], [Point1[1], Point2[1]], color)
+def draw_line(w, min_x, max_x, color="b"):
+    left_point = [min_x, (-w[2] - w[0] * min_x) / w[1]]
+    right_point = [max_x, (-w[2] - w[0] * max_x) / w[1]]
+    pyplot.plot([left_point[0], right_point[0]], [left_point[1], right_point[1]], color)
 
 
-# In[5]:
+# In[80]:
 
 def exact_separation(X, Y, first_cloud, second_cloud):
     tmp = numpy.linalg.inv(numpy.dot(X.T, X)) #(X^T * X)^(-1)
@@ -93,7 +93,7 @@ pyplot.show()
 # 
 # Видно, что графики 1 и 2 очень похожи при $M=y(wx+b)<<0$, и их производные при стремлении к $-\inf$ приближаются к $-M$. График 3 является параболой, при $y=-1$ ее основание будет в точке $(-1, 0)$.
 
-# In[19]:
+# In[3]:
 
 DX = 0.01
 MIN_ARG_VAL = -1 # = y(x)*w(wx+b)
@@ -101,9 +101,9 @@ MAX_ARG_VAL = 3
 
 arg_list = mlab.frange(MIN_ARG_VAL, MAX_ARG_VAL, DX)
 
-svm_list = [max(0, 1 - M) for M in arg_list]
-logistic_loss_list = [math.log(1 + math.exp(-M)) for M in arg_list]
-rmse_list = [(M-1)**2 for M in arg_list]
+svm_list = [max(0, 1 - arg) for arg in arg_list]
+logistic_loss_list = [math.log(1 + math.exp(-arg)) for arg in arg_list]
+rmse_list = [(arg-1)**2 for arg in arg_list]
 
 pyplot.plot(arg_list, rmse_list, "red")
 pyplot.plot(arg_list, svm_list, "green")
@@ -134,11 +134,11 @@ def y_derivative(x, y):
 def gradient_descent_simple(x, y, learning_rate, EPS, MAX_NUMBER_STEPS, deceleration = 0.5):
     trajectory = [[x], [y]]
     steps = 0
-    while (learning_rate > EPS and steps < MAX_NUMBER_STEPS):
+    while learning_rate > EPS and steps < MAX_NUMBER_STEPS:
         gradient = (x_derivative(x, y), y_derivative(x, y))
         x_new = x - learning_rate * gradient[0]
         y_new = y - learning_rate * gradient[1]
-        if (f(x_new, y_new) >= f(x, y)):
+        if f(x_new, y_new) >= f(x, y):
             learning_rate *= deceleration
         x, y = x_new, y_new
         trajectory[0].append(x)
@@ -147,7 +147,8 @@ def gradient_descent_simple(x, y, learning_rate, EPS, MAX_NUMBER_STEPS, decelera
     return trajectory, steps
 
     
-trajectory, steps = gradient_descent_simple(3.3, 7.1, 0.3, 0.001, 1000) #x, y, learning_rate, eps, max_steps
+trajectory, steps = gradient_descent_simple(x=3.3, y=7.1, learning_rate=0.3, 
+                                            EPS=0.001, MAX_NUMBER_STEPS=1000)
 print("Steps: ", steps)
 print("Final point: ", (trajectory[0][-1], trajectory[1][-1]))
 
@@ -176,7 +177,7 @@ pyplot.show()
 # 
 # Идея 3: давайте будем нормализовывать градиент. Тогда в областях с очень сильным и очень слабым ростом функции наш алгоритм будет более стабилен в плане скорости изменения координат. Однако, в этой идее есть минус: чтобы дойти до минимума, надо поставить ограничение на значение $\lambda$ (порог, когда мы останавливаемся) очень маленькое. В частности, для реализации этой идеи в коде ниже пришлось уменьшить значение $eps$ (порог) в 100 раз, но точность ответа все равно осталась довольно низка.
 
-# In[51]:
+# In[70]:
 
 def rosen(x, y):
     return (1 - x)**2 + 100 * (y - x**2)**2
@@ -190,19 +191,23 @@ def rosen_y_derivative(x, y):
     return 200 * (y - x**2)
 
 
-# In[8]:
+def rosen_gradient(x, y):
+    return numpy.array([rosen_x_derivative(x, y), rosen_y_derivative(x, y)])
 
-def updated_gradient_descent(x, y, learning_rate, EPS, MAX_NUMBER_STEPS, 
-                     func, func_x_derivative, func_y_derivative, 
-                     deceleration = 0.5, acceleration = 1.1):
+
+# In[71]:
+
+def updated_gradient_descent(x, y, learning_rate, eps, max_number_iters, 
+                             func, func_x_derivative, func_y_derivative, 
+                             deceleration = 0.5, acceleration = 1.1):
     trajectory = [[x], [y]]
     steps = 0
-    while (learning_rate > EPS and steps < MAX_NUMBER_STEPS):
+    while learning_rate > eps and steps < max_number_iters:
         gradient = [func_x_derivative(x, y), func_y_derivative(x, y)]
         gradient /= numpy.linalg.norm(gradient)
         x_new = x - learning_rate * gradient[0]
         y_new = y - learning_rate * gradient[1]
-        if (func(x_new, y_new) >= func(x, y)):
+        if func(x_new, y_new) >= func(x, y):
             learning_rate *= deceleration
         else:
             learning_rate *= acceleration
@@ -213,10 +218,11 @@ def updated_gradient_descent(x, y, learning_rate, EPS, MAX_NUMBER_STEPS,
     return trajectory, steps
 
 
-# In[57]:
+# In[72]:
 
-trajectory, steps = updated_gradient_descent(-3.05, 2.05, 1, 0.000005, 100000, 
-                                             rosen, rosen_x_derivative, rosen_y_derivative) 
+trajectory, steps = updated_gradient_descent(x=-3.05, y=2.05, learning_rate=1, EPS=0.000005, MAX_NUMBER_STEPS=100000, 
+                                             func=rosen, func_x_derivative=rosen_x_derivative, 
+                                             func_y_derivative=rosen_y_derivative)
                                             #x, y, learning_rate, eps, max_steps, func, df/dx, df/dy
 pyplot.plot(trajectory[0], trajectory[1], "red")
 print("Ответ:", x, y)
@@ -243,27 +249,30 @@ pyplot.show()
 # 
 # В последних методах использованы идеи о том, что алгоритм должен прекращать работу, если ошибка стала меньше заданного значения, или же если градиент стал очень мал.
 
-# In[32]:
+# In[81]:
 
-def calculate_RMSE(w, X, Y):
+def calculate_rmse(w, X, Y):
     rmse = 0
     for x, y in zip(X, Y):
         rmse += (numpy.dot(w, x) - y)**2
-    rmse /= len(X)
+    if len(X) == 0:
+        print("oO")
+    else:
+        rmse /= len(X)
     return rmse
 
 
-def get_optimal_learning_rate_RMSE(w, X, Y, gradient): #just calculate derivative and compare it with 0 to find best LR
+def get_optimal_learning_rate_rmse(w, X, Y, gradient): #just calculate derivative and compare it with 0 to find best LR
     denominator = 0
     numenator = 0
     for point in X:
         denominator += numpy.dot(gradient, point) ** 2
-    for i in range(0, len(X)):
-        numenator += (numpy.dot(w, X[i]) - Y[i]) * numpy.dot(gradient, X[i])
+    for x, y in zip(X, Y):
+        numenator += (numpy.dot(w, x) - y) * numpy.dot(gradient, x)
     return numenator / denominator
 
 
-def get_gradient_for_RMSE(w, X, Y):
+def get_gradient_for_rmse(w, X, Y):
     gradient = [0, 0, 0]
     for i in range(0, len(X)):
         for j in range(0, len(gradient)):
@@ -272,22 +281,22 @@ def get_gradient_for_RMSE(w, X, Y):
     return gradient
 
 
-# In[37]:
+# In[91]:
 
-def gradient_descent(w, X, Y, learning_rate, EPS, MAX_NUMBER_STEPS, 
+def gradient_descent(w, X, Y, learning_rate, eps, max_number_iters, 
                      func, func_derivative, 
-                     deceleration = 0.5, acceleration = 1.1):
+                     deceleration=0.5, acceleration=1.1):
     #func_derivative - must return gradient
-    rmse = calculate_RMSE(w, X, Y)
+    rmse = func(w, X, Y)
     loss_list = [rmse]
     steps = 0
-    while rmse > EPS and steps < MAX_NUMBER_STEPS:
-        gradient = get_gradient_for_RMSE(w, X, Y)
-        if (numpy.dot(gradient, gradient) < EPS):
+    while rmse > eps and steps < max_number_iters:
+        gradient = func_derivative(w, X, Y)
+        if (numpy.dot(gradient, gradient) < eps):
             break
         gradient /= numpy.linalg.norm(gradient)
         new_w = copy.copy(w) - learning_rate * gradient
-        new_RMSE = calculate_RMSE(w, X, Y)
+        new_RMSE = func(w, X, Y)
         if (new_RMSE >= rmse):
             learning_rate *= deceleration
         else:
@@ -299,29 +308,28 @@ def gradient_descent(w, X, Y, learning_rate, EPS, MAX_NUMBER_STEPS,
     return w, loss_list
 
 
-# In[41]:
+# In[92]:
 
-def steepest_gradient(w, X, Y, learning_rate, EPS, MAX_NUMBER_STEPS, 
-                      func, func_derivative, func_minimize, 
-                      deceleration = 0.5, acceleration = 1.1):
+def steepest_gradient(w, X, Y, eps, max_number_iters, 
+                      func, func_derivative, func_minimize):
     #func_minimize - must return optimal learning rate for (w, X, Y, gradient)
     rmse = func(w, X, Y)
     loss_list = [rmse]
     steps = 0
-    while rmse > EPS and steps < MAX_NUMBER_STEPS:
+    while rmse > eps and steps < max_number_iters:
         gradient = func_derivative(w, X, Y)
-        if (numpy.dot(gradient, gradient) < EPS):
+        if numpy.dot(gradient, gradient) < eps:
             break
         gradient /= numpy.linalg.norm(gradient)
         learning_rate = func_minimize(w, X, Y, gradient)
         w -= learning_rate * gradient
-        rmse = func(new_w, X, Y)
+        rmse = func(w, X, Y)
         loss_list.append(rmse)
         steps += 1
     return w, loss_list
 
 
-# In[46]:
+# In[93]:
 
 POINTS_NUMBER = 500
 MAX_X = 12
@@ -334,28 +342,28 @@ Y = (numpy.hstack(([-1] * POINTS_NUMBER, [1] * POINTS_NUMBER))).transpose()
 #Right solution
 w = exact_separation(X, Y, first_cloud, second_cloud)
 
-rmse = calculate_RMSE(w, X, Y)
+rmse = calculate_rmse(w, X, Y)
 draw_line(w, MIN_X, MAX_X, '#00fa9a')
 print("Right answer: ", w, ";  err: ", rmse)
 
 #gradient descent
 w, loss_list1 = gradient_descent([1.4532, -1.245, 0.1057], X, Y, 1, 0.05, 100, 
-                                 calculate_RMSE, get_gradient_for_RMSE)
+                                 calculate_rmse, get_gradient_for_rmse)
 
 draw_line(w, MIN_X, MAX_X, "g")
 print("Gradient descent's answer: ", w, ";  err: ", loss_list1[-1])
 print("Steps: ", len(loss_list1))
 #steepest gradient descent
-w, loss_list2 = steepest_gradient([1.4532, -1.245, 0.1057], X, Y, 1, 0.05, 20, 
-                                  calculate_RMSE, get_gradient_for_RMSE, get_optimal_learning_rate_RMSE)
+w, loss_list2 = steepest_gradient([1.4532, -1.245, 0.1057], X, Y, 0.05, 20, 
+                                  calculate_rmse, get_gradient_for_rmse, get_optimal_learning_rate_rmse)
 draw_line(w, MIN_X, MAX_X, "yellow")
 print("Steepest gradient's answer: ", w, ";  err: ", loss_list2[-1])
 print("Steps: ", len(loss_list2))
 
 pyplot.show()
 
-pyplot.plot([i for i in range(len(loss_list1))], loss_list1, "blue")
-pyplot.plot([i for i in range(len(loss_list2))], loss_list2, "red")
+pyplot.plot(list(range(len(loss_list1))), loss_list1, "blue")
+pyplot.plot(list(range(len(loss_list2))), loss_list2, "red")
 pyplot.xlabel("Steps")
 pyplot.ylabel("RMSE")
 pyplot.show()
@@ -383,7 +391,7 @@ pyplot.show()
 # 
 # Нарисованы графики зависимости ошибки на всех данных от количества просмотренных элементов, для разных размеров пакетов. Какая линия к какому размеру пакета относится, можно определить исходя из их взаимного расположения и напечатанных перед графиком данных. Несложно заметить, что если пакеты слишком маленькие, то обучение становится нестабильным из-за того, что вероятность, что некий существенный признак попадет в пакет, слишком низка. С другой стороны, на больших пакетах, хоть обучение и более стабильно, но скорость обучения сильно ниже, поскольку просто делается меньше шагов оптимизации. В данном случае оптимальный размер пакета - около 100. На пакетах меньшего размера качество обучения достаточно сильно зависит от изначальной позиции, которая генерируется случайным образом. Есть ощущение, что на пакетах большого размера встроенная в scipy функция минимизации работает хуже и может выдавать не оптимальный ответ (но это не точно).
 
-# In[63]:
+# In[5]:
 
 def load_data():
     data = numpy.genfromtxt('train.csv', delimiter=',')
@@ -405,7 +413,21 @@ def load_data():
     return first_group, second_group
 
 
-# In[67]:
+# In[14]:
+
+def create_batch(first_group, second_group, batch_size, features_number, data_for_learning_size, step_num):
+    X = numpy.empty((batch_size, features_number)) #creating batch
+    Y = []
+    for i in range(0, batch_size // 2):
+        index = (step_num * batch_size // 2 + i) % data_for_learning_size
+        X[i * 2] = numpy.array(first_group[index % len(first_group)])
+        Y.append(1)
+        X[i * 2 + 1] = numpy.array(second_group[index % len(second_group)])
+        Y.append(-1)
+    return X, Y
+
+
+# In[15]:
 
 def logistic_func_derivative(w, X, Y):
     gradient = [0] * len(w)
@@ -422,20 +444,24 @@ def calculate_logistic_func(w, X, Y):
     ans = 0
     for x, y in zip(X, Y):
         if (-y * numpy.dot(w, x) > 10): #anti overflow
-            ans += (-Y[i] * numpy.dot(w, x))
+            ans += (-y * numpy.dot(w, x))
         else:
             ans += math.log(1 + math.exp(-y * numpy.dot(w, x)))
-    return ans / len(X)
+    if len(X) > 0:
+        ans /= len(X)
+    return ans
 
 
 def calculate_next_logistic_error(learning_rate, w, X, Y, gradient): #for minimize_scalar
     ans = 0
     for x, y in zip(X, Y):
-        if (-y * numpy.dot(numpy.array(w) - learning_rate * numpy.array(gradient), x) > 10):
+        if (-y * numpy.dot(numpy.array(w) - learning_rate * numpy.array(gradient), x) > 10): #anti-overflow
             ans += (-y * numpy.dot(numpy.array(w) - learning_rate * numpy.array(gradient), x))
         else:
             ans += math.log(1 + math.exp(-y * numpy.dot(numpy.array(w) - learning_rate * numpy.array(gradient), x)))
-    return ans / len(X)
+    if len(X) > 0:
+        ans /= len(X)
+    return ans
 
 
 def get_number_errors(w, X, Y):
@@ -446,7 +472,29 @@ def get_number_errors(w, X, Y):
     return ans
 
 
-# In[72]:
+# In[16]:
+
+def stohastic_gradient_descent(first_group, second_group, batch_size, max_number_steps,
+                              features_number, data_for_learning_size, min_error, matrix_features, matrix_answers):
+    list_errors = []
+    steps = 0
+    w = numpy.random.random(features_number)
+    general_error = min_error + 1 #this value allows use do execute 'while' below at least 1 time
+    while steps < max_number_steps and general_error > min_error: #means that there are used (BATCH_SIZE * MAX_NUMBER_OF_STEPS) % DATA_FOR_LEARNING_SIZE elems from data
+        X, Y = create_batch(first_group, second_group, batch_size, features_number, data_for_learning_size, steps)
+        
+        #logistic_loss = calculate_logistic_func(w, X, Y)
+        gradient = logistic_func_derivative(w, X, Y)
+        learning_rate = minimize_scalar(lambda lr: calculate_next_logistic_error(lr, w, X, Y, gradient)).x
+        w -= learning_rate * gradient
+        #logistic_loss = calculate_logistic_func(w, X, Y)
+        steps += 1
+        general_error = get_number_errors(w, matrix_features, matrix_answers)
+        list_errors.append(general_error)
+    return w, list_errors
+
+
+# In[17]:
 
 first_group, second_group = load_data()
 print("Elems in 1st group:", len(first_group), ", in 2nd:", len(second_group))
@@ -463,40 +511,12 @@ EPS = 0.0001
 
 for batch_size in list_batch_size:
     print("Batch size: ", batch_size)
-    list_errors = []
-    max_number_steps = 8000 // batch_size
-
-    steps = 0
-    w = numpy.random.random(FEATURES_NUMBER)
-    learning_rate = 0.25
-    logistic_loss = 1000000000000
-    general_error = MIN_ERROR + 1 #this value allows use do execute 'while' below at least 1 time
-    while (steps < max_number_steps and general_error > MIN_ERROR): #means that there are used (BATCH_SIZE * MAX_NUMBER_OF_STEPS) % DATA_FOR_LEARNING_SIZE elems from data
-        X = numpy.empty((batch_size, FEATURES_NUMBER)) #creating batch
-        Y = []
-        for i in range(0, batch_size // 2):
-            index = (steps * batch_size // 2 + i) % DATA_FOR_LEARNING_SIZE
-            X[i * 2] = numpy.array(first_group[index % len(first_group)])
-            Y.append(1)
-            X[i * 2 + 1] = numpy.array(second_group[index % len(second_group)])
-            Y.append(-1)
-        
-        logistic_loss = calculate_logistic_func(w, X, Y)
-        gradient = logistic_func_derivative(w, X, Y)
-        if (learning_rate < EPS and numpy.linalg.norm(gradient) > 0): #magic optimization. It really helps, if you don't use minimize_scalar!
-            gradient /= numpy.linalg.norm(gradient)
-        if (numpy.dot(gradient, gradient) < 0):
-            break
-        learning_rate = minimize_scalar(lambda lr: calculate_next_logistic_error(lr, w, X, Y, gradient)).x
-        w -= learning_rate * gradient
-        logistic_loss = calculate_logistic_func(w, X, Y)
-        steps += 1
-        general_error = get_number_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS)
-        list_errors.append(general_error)
-        #print(steps * 100 // max_number_steps, "%", sep = '')
+    w, list_errors = stohastic_gradient_descent(first_group, second_group, batch_size, 8000 // batch_size,
+                                               FEATURES_NUMBER, DATA_FOR_LEARNING_SIZE, MIN_ERROR,
+                                               MATRIX_FEATURES, MATRIX_ANSWERS)
     list_results.append(list_errors)
-    print("Errors: ", general_error, "/", len(first_group) + len(second_group))
-    print("Used elements: ", steps * batch_size)
+    print("Errors: ", get_number_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS), "/", len(first_group) + len(second_group))
+    print("Used elements: ", len(list_errors) * batch_size)
 for i in range(len(list_results)):
     pyplot.plot([list_batch_size[i] * j for j in range(0, len(list_results[i]))], list_results[i], list_colors[i])
 pyplot.show()
@@ -516,80 +536,71 @@ pyplot.show()
 # 
 # Кстати, время работы метода сохранения импульса сильно улучшится, если тоже скорость обучения на данном шаге вычислять, как в методе наискорейшего спуска. Но тогда стоит сделать значение $\gamma$ меньше (около 0.3).
 
-# In[15]:
+# In[16]:
 
 def f(x, y):
     return 10 * x**2 + y**2
 
 
-def x_derivative(x, y):
-    return 20 * x
+def f_gradient(x, y):
+    return numpy.array([20 * x, 2 * y])
 
 
-def y_derivative(x, y):
-    return 2 * y
-
-
-def normalize(x, y):
-    len = (x**2 + y**2)**0.5
-    if (len > 0):
-        return (x / len, y / len)
-    return (0, 0)
-
-
-def get_lambda_to_optimize_f(x, y, gradient):
+def get_optimal_learning_rate(x, y, gradient):
     return (10 * x * gradient[0] + y * gradient[1]) / (10 * gradient[0]**2 + gradient[1]**2)
 
 
-x = 2
-y = -33
-learning_rate = 1
-eps = 0.00005
-list_error = [f(x, y)]
-steps = 0
-while (learning_rate > eps):
-    gradient = (x_derivative(x, y), y_derivative(x, y))
-    if gradient[0]**2 + gradient[1]**2 < eps:
-        break
-    gradient = normalize(gradient[0], gradient[1])
-    learning_rate = get_lambda_to_optimize_f(x, y, gradient)
-    x_new = x - learning_rate * gradient[0]
-    y_new = y - learning_rate * gradient[1]
-    (x, y) = (x_new, y_new)
-    list_error.append(f(x, y))
-    steps += 1
-print("Ответ:", x, y)
-print("Количество шагов:", steps)
+# In[97]:
 
+def momentum_method(x, y, learning_rate, eps, max_number_iters, func, func_derivative, GAMMA=0.85):
+    list_error = [f(x, y)]
+    steps = 0
+    impulse = numpy.array([0, 0])
+    while steps < max_number_iters:
+        gradient = func_derivative(x, y)
+        if numpy.linalg.norm(gradient)**2 < eps:
+            break
+        impulse = GAMMA * impulse + learning_rate * gradient
+        x -= impulse[0]
+        y -= impulse[1]
+        list_error.append(func(x, y))
+        steps += 1
+    return x, y, list_error
+
+
+# In[96]:
+
+def steepest_gradient_simple(x, y, eps, max_number_iters, func, func_derivative, func_minimize):
+    list_error = [func(x, y)]
+    steps = 0
+    learning_rate = eps + 1
+    while learning_rate > eps and steps < max_number_iters:
+        gradient = func_derivative(x, y)
+        if numpy.linalg.norm(gradient)**2 < eps:
+            break
+        learning_rate = func_minimize(x, y, gradient)
+        x -= learning_rate * gradient[0]
+        y -= learning_rate * gradient[1]
+        list_error.append(func(x, y))
+        steps += 1
+    return x, y, list_error
+
+
+x, y, list_error = steepest_gradient_simple(x=2, y=-33, eps=0.00005, max_number_iters=1000, 
+                                            func=f, func_derivative=f_gradient, func_minimize=get_optimal_learning_rate)
+
+print("Ответ:", x, y)
+print("Количество шагов:", len(list_error))
 pyplot.xlabel("Number of steps")
 pyplot.ylabel("Q(x, y)")
 pyplot.plot(range(5, len(list_error)), list_error[5:], "blue")
 pyplot.show()
 
-_GAMMA = 0.85
-x = 2
-y = -33
-eps = 0.00005
-list_error = [f(x, y)]
-steps = 0
-learning_rate = 0.01
-impulse = [0, 0]
-while (learning_rate > eps):
-    gradient = (x_derivative(x, y), y_derivative(x, y))
-    if gradient[0]**2 + gradient[1]**2 < eps:
-        break
-    #gradient = normalize(gradient[0], gradient[1])
-    #learning_rate = get_lambda_to_optimize_f(x, y, gradient)
-    impulse[0] = _GAMMA * impulse[0] + learning_rate * gradient[0]
-    impulse[1] = _GAMMA * impulse[1] + learning_rate * gradient[1]
-    x_new = x - impulse[0]
-    y_new = y - impulse[1]
-    (x, y) = (x_new, y_new)
-    list_error.append(f(x, y))
-    steps += 1
-print("Ответ:", x, y)
-print("Количество шагов:", steps)
+x, y, list_error = momentum_method(x=2, y=-33, learning_rate=0.01, eps=0.00005, max_number_iters=1000, 
+                                   func=f, func_derivative=f_gradient, GAMMA=0.85)
 
+print("Ответ:", x, y)
+print("Количество шагов:", len(list_error))
 pyplot.xlabel("Number of steps")
 pyplot.ylabel("Q(x, y)")
 pyplot.plot(range(5, len(list_error)), list_error[5:], "red")
@@ -602,100 +613,43 @@ pyplot.show()
 # 
 # Видно, что хотя простой метод сохранения импульса работает немного быстрее, метод ускоренного градиента Нестерова делает график изменения ошибки более гладким. Кроме того, он гораздо быстрее приходит в область минимума, чем простой метод.
 
-# In[53]:
+# In[94]:
 
-from matplotlib import pyplot, mlab
-import numpy
-import math
-from scipy.optimize import minimize_scalar
-
-
-def f(x, y):
-    return (1 - x)**2 + 100 * (y - x**2)**2
-
-
-def x_derivative(x, y):
-    return 2 * (-1 + x + 200 * x**3 - 200 * x * y)
-
-
-def y_derivative(x, y):
-    return 200 * (y - x**2)
-
-
-def normalize(x, y):
-    len = (x**2 + y**2)**0.5
-    return (x / len, y / len)
+def nesterov_accelerated_gradient(x, y, learning_rate, eps, max_number_iters, 
+                                  func, func_x_der, func_y_der, 
+                                  GAMMA=0.9):
+    list_error = [func(x, y)]
+    steps = 0
+    impulse = numpy.array([0, 0])
+    while steps < max_number_iters and list_error[-1] > eps:
+        gradient = numpy.array([func_x_der(x - impulse[0], y - impulse[1]), 
+                                func_y_der(x - impulse[0], y - impulse[1])])
+        if numpy.linalg.norm(gradient)**2 < eps:
+            break
+        impulse = GAMMA * impulse + learning_rate * gradient
+        x -= impulse[0]
+        y -= impulse[1]
+        list_error.append(func(x, y))
+        steps += 1
+    return x, y, list_error
 
 
-def calculate_error_fixed(_lambda): #do not use it on your own!
-    global x
-    global y
-    global gradient
-    return f(x - _lambda * gradient[0], y - _lambda * gradient[1])
+# In[98]:
 
-
-_GAMMA = 0.9
-
-x = 1.7
-y = 2.3
-eps = 0.01
-list_error = [f(x, y)]
-steps = 0
-learning_rate = 0.0003
-impulse = [0, 0]
-best_result = [100000000000, (-100000, -100000)]
-while (best_result[0] > eps and steps < 1000):
-    gradient = (x_derivative(x, y), y_derivative(x, y))
-    if gradient[0]**2 + gradient[1]**2 < eps:
-        break
-    #gradient = normalize(gradient[0], gradient[1])
-    #learning_rate = minimize_scalar(calculate_error_fixed).x
-    impulse[0] = _GAMMA * impulse[0] + learning_rate * gradient[0]
-    impulse[1] = _GAMMA * impulse[1] + learning_rate * gradient[1]
-    x_new = x - impulse[0]
-    y_new = y - impulse[1]
-    (x, y) = (x_new, y_new)
-    if (f(x, y) < best_result[0]):
-        best_result[0] = f(x, y)
-        best_result[1] = (x, y)
-    list_error.append(f(x, y))
-    steps += 1
+x, y, list_error = momentum_method(x=1.7, y=2.3, learning_rate=0.0003, eps=0.01, max_number_iters=500, 
+                                   func=rosen, func_derivative=rosen_gradient)
 print("Ответ:", x, y)
-print("Лучшее значение: ", best_result[0], " при x =", best_result[1][0], ", y =", best_result[1][1])
-print("Количество шагов:", steps)
+print("Количество шагов:", len(list_error) - 1)
 
 pyplot.xlabel("Number of steps")
 pyplot.ylabel("Q(x, y)")
 pyplot.plot(range(4, len(list_error)), list_error[4:], "red")
 pyplot.show()
 
-x = 1.7
-y = 2.3
-eps = 0.01
-list_error = [f(x, y)]
-steps = 0
-learning_rate = 0.0003
-impulse = [0, 0]
-best_result = [100000000000, (-100000, -100000)]
-while (best_result[0] > eps and steps < 1000):
-    gradient = (x_derivative(x - impulse[0], y - impulse[1]), y_derivative(x - impulse[0], y - impulse[1]))
-    if gradient[0]**2 + gradient[1]**2 < eps:
-        break
-    #gradient = normalize(gradient[0], gradient[1])
-    #learning_rate = minimize_scalar(calculate_error_fixed).x
-    impulse[0] = _GAMMA * impulse[0] + learning_rate * gradient[0]
-    impulse[1] = _GAMMA * impulse[1] + learning_rate * gradient[1]
-    x_new = x - impulse[0]
-    y_new = y - impulse[1]
-    (x, y) = (x_new, y_new)
-    if (f(x, y) < best_result[0]):
-        best_result[0] = f(x, y)
-        best_result[1] = (x, y)
-    list_error.append(f(x, y))
-    steps += 1
+x, y, list_error = nesterov_accelerated_gradient(x=1.7, y=2.3, learning_rate=0.0003, eps=0.01, max_number_iters=500, 
+                                                 func=rosen, func_x_der=rosen_x_derivative, func_y_der=rosen_y_derivative)
 print("Ответ:", x, y)
-print("Лучшее значение: ", best_result[0], " при x =", best_result[1][0], ", y =", best_result[1][1])
-print("Количество шагов:", steps)
+print("Количество шагов:", len(list_error) - 1)
 
 pyplot.xlabel("Number of steps")
 pyplot.ylabel("Q(x, y)")
@@ -711,93 +665,69 @@ pyplot.show()
 # 
 # График зависимости ошибки от количества элементов (пакеты с элементами могут повторяться) для обычного спуска показан синим, для AgaGrad - красным.
 
-# In[15]:
+# In[58]:
 
-from matplotlib import pyplot, mlab
-import numpy
-import math
-import random
-import copy
-from scipy.optimize import minimize_scalar
-
-
-def get_logistic_func_derivative(w, X, Y):
-    gradient = [0] * len(w)
-    for i in range(0, len(X)):
-        for j in range(0, len(gradient)):
-            if (-Y[i] * numpy.dot(w, X[i]) > 10):
-                gradient[j] += (-Y[i] * X[i][j])
-            else:
-                gradient[j] += math.exp(-Y[i] * numpy.dot(w, X[i])) / (1 + math.exp(-Y[i] * numpy.dot(w, X[i]))) * (-Y[i]) * X[i][j]
-    return gradient
-
-
-def calculate_logistic_func_error(w, X, Y):
-    ans = 0
-    for i in range(0, len(X)):
-        if (-Y[i] * numpy.dot(w, X[i]) > 10):
-            ans += (-Y[i] * numpy.dot(w, X[i]))
+def stohastic_gradient_descent_simple(first_group, second_group, batch_size, max_number_steps,
+                                      features_number, data_for_learning_size, min_error, matrix_features, matrix_answers,
+                                      learning_rate = 0.2, deceleration = 0.5, acceleration = 1.1):
+    list_errors = []
+    steps = 0
+    w = numpy.random.random(features_number)
+    general_error = min_error + 1 #this value allows use do execute 'while' below at least 1 time
+    while steps < max_number_steps and general_error > min_error: #means that there are used (BATCH_SIZE * MAX_NUMBER_OF_STEPS) % DATA_FOR_LEARNING_SIZE elems from data
+        X, Y = create_batch(first_group, second_group, batch_size, features_number, data_for_learning_size, steps)
+        
+        #logistic_loss = calculate_logistic_func(w, X, Y)
+        gradient = logistic_func_derivative(w, X, Y)
+        new_w = copy.copy(w)
+        for i in range(0, len(w)):
+            new_w[i] -= learning_rate * gradient[i]
+        if (calculate_logistic_func(new_w, X, Y) >= logistic_loss):
+            learning_rate *= deceleration
         else:
-            ans += math.log(1 + math.exp(-Y[i] * numpy.dot(w, X[i])))
-    return ans / len(X)
+            learning_rate *= acceleration
+        w = copy.copy(new_w)
+        #logistic_loss = calculate_logistic_func(w, X, Y)
+        steps += 1
+        general_error = get_number_errors(w, matrix_features, matrix_answers)
+        list_errors.append(general_error)
+    return w, list_errors
 
 
-def calculate_logistic_func_error_fixed(learning_rate): #do not use it for your own
-    global X
-    global Y
-    global w
-    global gradient
-    ans = 0
-    for i in range(0, len(X)):
-        if (-Y[i] * numpy.dot(numpy.array(w) - learning_rate * numpy.array(gradient), X[i]) > 10):
-            ans += (-Y[i] * numpy.dot(numpy.array(w) - learning_rate * numpy.array(gradient), X[i]))
-        else:
-            ans += math.log(1 + math.exp(-Y[i] * numpy.dot(numpy.array(w) - learning_rate * numpy.array(gradient), X[i])))
-    return ans / len(X)
+# In[64]:
+
+def adagrad(first_group, second_group, batch_size, max_number_steps,
+            features_number, data_for_learning_size, min_error, matrix_features, matrix_answers,
+            learning_rate = 1):
+    list_errors = []
+    steps = 0
+    G_matrix = numpy.zeros((features_number, features_number))
+    w = numpy.random.random(features_number)
+    general_logistic_loss = min_error + 1
+    while steps < max_number_steps and general_logistic_loss > min_error:
+        X, Y = create_batch(first_group, second_group, batch_size, features_number, data_for_learning_size, steps)
+
+        #logistic_loss = calculate_logistic_func(w, X, Y)
+        gradient = numpy.array(logistic_func_derivative(w, X, Y))
+        G_matrix += gradient.transpose() * gradient
+        new_w = copy.copy(w)
+        for i in range(0, len(w)):
+            new_w[i] -= learning_rate * gradient[i] / (math.sqrt(G_matrix[i][i]) + eps)
+        w = copy.copy(new_w)
+        #logistic_loss = calculate_logistic_func(new_w, X, Y)
+        steps += 1
+        general_logistic_loss = get_number_errors(w, matrix_features, matrix_answers)
+        list_errors.append(general_logistic_loss)
+    return w, list_errors
 
 
-def get_count_errors(w, X, Y):
-    ans = 0
-    for i in range(0, len(X)):
-        if (numpy.dot(w, X[i]) * Y[i] < 0):
-            ans += 1
-    return ans
+# In[65]:
 
-
-def normalize(gradient):
-    length = 0
-    for i in range(len(gradient)):
-        length += gradient[i]**2
-    if (length == 0):
-        return gradient
-    for i in range(0, len(gradient)):
-        gradient[i] /= length
-    return gradient
-
-
-input = open('train.csv', 'r')
-s = input.readline()
-s = input.readline()
-first_group = [] #0
-second_group = [] #1
-while (len(s) > 1):
-    elem = list(map(int, s.split(',')))
-    if (len(elem) != 785):
-        print("CRITICAL ERROR: THE PROGRAM CANNOT READ THIS FILE")
-    elif (elem[0] == 0):
-        tmp = elem[1:]
-        tmp.append(1)
-        first_group.append(tmp)
-    elif (elem[0] == 1):
-        tmp = elem[1:]
-        tmp.append(1)
-        second_group.append(tmp)
-    s = input.readline()
+first_group, second_group = load_data()
 
 print(len(first_group), len(second_group))
 
 BATCH_SIZE = 100
-list_errors = []
 FEATURES_NUMBER = len(first_group[0])
 DATA_FOR_LEARNING_SIZE = 2050 #2050 from 1st and 2050 from 2nd
 MAX_NUMBER_STEPS = 8000 // BATCH_SIZE
@@ -805,81 +735,19 @@ MIN_LOSS = 3
 MATRIX_FEATURES = numpy.vstack((numpy.array(first_group), numpy.array(second_group)))
 MATRIX_ANSWERS = [1] * len(first_group) + [-1] * len(second_group)
 
-steps = 0
-w = numpy.array([random.random() for i in range(FEATURES_NUMBER)])
-learning_rate = 0.25
-logistic_loss = 1000000000000
-general_logistic_loss = MIN_LOSS + 100
-while (steps < MAX_NUMBER_STEPS and general_logistic_loss > MIN_LOSS):
-    X = numpy.empty((BATCH_SIZE, 785))
-    Y = []
-    for i in range(0, BATCH_SIZE // 2):
-        index = (steps * BATCH_SIZE // 2 + i) % DATA_FOR_LEARNING_SIZE
-        X[i * 2] = numpy.array(first_group[index % len(first_group)])
-        Y.append(1)
-        X[i * 2 + 1] = numpy.array(second_group[index % len(second_group)])
-        Y.append(-1)
-    if (len(X) != BATCH_SIZE):
-        print("CRITICAL ERROR")
-        break
-    logistic_loss = calculate_logistic_func_error(w, X, Y)
-    gradient = (get_logistic_func_derivative(w, X, Y))
-    if (learning_rate < 0.0001): #magic optimization. It really helps, if you don't use minimize_scalar!
-        gradient = normalize(gradient)
-    #learning_rate = minimize_scalar(calculate_logistic_func_error_fixed).x
-    new_w = copy.copy(w)
-    for i in range(0, len(w)):
-        new_w[i] -= learning_rate * gradient[i]
-    if (calculate_logistic_func_error(new_w, X, Y) >= logistic_loss):
-        learning_rate /= 2
-    else:
-        learning_rate *= 1.1
-    w = copy.copy(new_w)
-    logistic_loss = calculate_logistic_func_error(new_w, X, Y)
-    steps += 1
-    general_logistic_loss = get_count_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS)
-    list_errors.append(general_logistic_loss)
-    #print(logistic_loss, learning_rate, calculate_logistic_func_error(new_w, X, Y), general_logistic_loss)
-    #print(steps * 100 // MAX_NUMBER_STEPS, "%", sep = '')
-print("Errors: ", general_logistic_loss, "/", len(first_group) + len(second_group))
-print("Used elements: ", steps * BATCH_SIZE)
-pyplot.plot([i for i in range(steps)], list_errors, "blue")
+w, list_errors = stohastic_gradient_descent_simple(first_group, second_group, BATCH_SIZE, MAX_NUMBER_STEPS, 
+                                                   FEATURES_NUMBER, DATA_FOR_LEARNING_SIZE, MIN_LOSS, 
+                                                   MATRIX_FEATURES, MATRIX_ANSWERS)
+print("Errors: ", get_number_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS), "/", len(first_group) + len(second_group))
+print("Used elements: ", len(list_errors) * BATCH_SIZE)
+pyplot.plot(list(range(len(list_errors))), list_errors, "blue")
 
-list_errors = []
-steps = 0
-G_matrix = numpy.zeros((FEATURES_NUMBER, FEATURES_NUMBER))
-w = numpy.array([random.random() for i in range(FEATURES_NUMBER)])
-learning_rate = 1
-logistic_loss = 1000000000000
-general_logistic_loss = MIN_LOSS + 100
-eps = 0.01
-while (steps < MAX_NUMBER_STEPS and general_logistic_loss > MIN_LOSS):
-    X = numpy.empty((BATCH_SIZE, 785))
-    Y = []
-    for i in range(0, BATCH_SIZE // 2):
-        index = (steps * BATCH_SIZE // 2 + i) % DATA_FOR_LEARNING_SIZE
-        X[i * 2] = numpy.array(first_group[index % len(first_group)])
-        Y.append(1)
-        X[i * 2 + 1] = numpy.array(second_group[index % len(second_group)])
-        Y.append(-1)
-    if (len(X) != BATCH_SIZE):
-        print("CRITICAL ERROR")
-        break
-    logistic_loss = calculate_logistic_func_error(w, X, Y)
-    gradient = numpy.array(get_logistic_func_derivative(w, X, Y))
-    G_matrix += gradient.transpose() * gradient
-    new_w = copy.copy(w)
-    for i in range(0, len(w)):
-        new_w[i] -= learning_rate * gradient[i] / (math.sqrt(G_matrix[i][i]) + eps)
-    w = copy.copy(new_w)
-    logistic_loss = calculate_logistic_func_error(new_w, X, Y)
-    steps += 1
-    general_logistic_loss = get_count_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS)
-    #print(logistic_loss, learning_rate, general_logistic_loss)
-    list_errors.append(general_logistic_loss)
-print("Errors: ", general_logistic_loss, "/", len(first_group) + len(second_group))
-print("Used elements: ", steps * BATCH_SIZE)
-pyplot.plot([i for i in range(steps)], list_errors, "red")
+w, list_errors = adagrad(first_group, second_group, BATCH_SIZE, MAX_NUMBER_STEPS,
+                         FEATURES_NUMBER, DATA_FOR_LEARNING_SIZE, MIN_LOSS,
+                         MATRIX_FEATURES, MATRIX_ANSWERS)
+print("Errors: ", get_number_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS), "/", len(first_group) + len(second_group))
+print("Used elements: ", len(list_errors) * BATCH_SIZE)
+pyplot.plot(list(range(len(list_errors))), list_errors, "red")
 pyplot.show()
 
 
@@ -904,93 +772,46 @@ pyplot.show()
 # 
 # Код ниже является реализацией алгоритма Adam(2015). По графику видно, что благодаря оптимизациям, судя по всему, качество у Adam действительно немного лучше, чем у AdaGrad (в частности, применение RMSprop улучшает ситуацию со знаменателем дроби). Кстати, горб на графике, очевидно, образуется из-за слишком "разогнавшегося" спуска с импульсом.
 
-# In[14]:
+# In[68]:
 
-from matplotlib import pyplot, mlab
-import numpy
-import math
-import random
-import copy
-from scipy.optimize import minimize_scalar
-
-
-def get_logistic_func_derivative(w, X, Y):
-    gradient = [0] * len(w)
-    for i in range(0, len(X)):
-        for j in range(0, len(gradient)):
-            if (-Y[i] * numpy.dot(w, X[i]) > 10):
-                gradient[j] += (-Y[i] * X[i][j])
-            else:
-                gradient[j] += math.exp(-Y[i] * numpy.dot(w, X[i])) / (1 + math.exp(-Y[i] * numpy.dot(w, X[i]))) * (-Y[i]) * X[i][j]
-    return gradient
-
-
-def calculate_logistic_func_error(w, X, Y):
-    ans = 0
-    for i in range(0, len(X)):
-        if (-Y[i] * numpy.dot(w, X[i]) > 10):
-            ans += (-Y[i] * numpy.dot(w, X[i]))
-        else:
-            ans += math.log(1 + math.exp(-Y[i] * numpy.dot(w, X[i])))
-    return ans / len(X)
-
-
-def calculate_logistic_func_error_fixed(learning_rate): #do not use it for your own
-    global X
-    global Y
-    global w
-    global gradient
-    ans = 0
-    for i in range(0, len(X)):
-        if (-Y[i] * numpy.dot(numpy.array(w) - learning_rate * numpy.array(gradient), X[i]) > 10):
-            ans += (-Y[i] * numpy.dot(numpy.array(w) - learning_rate * numpy.array(gradient), X[i]))
-        else:
-            ans += math.log(1 + math.exp(-Y[i] * numpy.dot(numpy.array(w) - learning_rate * numpy.array(gradient), X[i])))
-    return ans / len(X)
+def adam(first_group, second_group, batch_size, max_number_steps, 
+         features_number, data_for_learning_size, min_error, matrix_features, matrix_answers, 
+         first_momentum_coeff = 0.9, second_momentum_coeff = 0.999, learning_rate = 1):
+    list_errors = []
+    steps = 0
+    w = numpy.random.random(features_number)
+    general_logistic_loss = min_error + 1
+    first_momentum = numpy.array([0] * features_number)
+    second_momentum = numpy.zeros((features_number, features_number))
+    first_coeff_powered = first_momentum_coeff
+    second_coeff_powered = second_momentum_coeff
+    while steps < max_number_steps and general_logistic_loss > min_error:
+        X, Y = create_batch(first_group, second_group, batch_size, features_number, data_for_learning_size, steps)
+        #logistic_loss = calculate_logistic_func(w, X, Y)
+        gradient = numpy.array(logistic_func_derivative(w, X, Y))
+        first_momentum = first_momentum * first_momentum_coeff + gradient * (1 - first_momentum_coeff)
+        second_momentum = second_momentum_coeff * second_momentum + (1 - second_momentum_coeff) * (gradient.transpose() * gradient)
+        first_coeff_powered *= first_momentum_coeff
+        second_coeff_powered *= second_momentum_coeff
+        bias_corrected_first = first_momentum / (1 - first_coeff_powered)
+        new_w = copy.copy(w)
+        for i in range(0, len(w)):
+            new_w[i] -= learning_rate * bias_corrected_first[i] / (eps + math.sqrt(second_momentum[i][i] / (1 - second_coeff_powered)))
+        w = copy.copy(new_w)
+        #logistic_loss = calculate_logistic_func(new_w, X, Y)
+        steps += 1
+        general_logistic_loss = get_number_errors(w, matrix_features, matrix_answers)
+        list_errors.append(general_logistic_loss)
+    return w, list_errors
 
 
-def get_count_errors(w, X, Y):
-    ans = 0
-    for i in range(0, len(X)):
-        if (numpy.dot(w, X[i]) * Y[i] < 0):
-            ans += 1
-    return ans
+# In[69]:
 
-
-def normalize(gradient):
-    length = 0
-    for i in range(len(gradient)):
-        length += gradient[i]**2
-    if (length == 0):
-        return gradient
-    for i in range(0, len(gradient)):
-        gradient[i] /= length
-    return gradient
-
-
-input = open('train.csv', 'r')
-s = input.readline()
-s = input.readline()
-first_group = [] #0
-second_group = [] #1
-while (len(s) > 1):
-    elem = list(map(int, s.split(',')))
-    if (len(elem) != 785):
-        print("CRITICAL ERROR: THE PROGRAM CANNOT READ THIS FILE")
-    elif (elem[0] == 0):
-        tmp = elem[1:]
-        tmp.append(1)
-        first_group.append(tmp)
-    elif (elem[0] == 1):
-        tmp = elem[1:]
-        tmp.append(1)
-        second_group.append(tmp)
-    s = input.readline()
+first_group, second_group = load_data()
 
 print(len(first_group), len(second_group))
 
 BATCH_SIZE = 100
-list_errors = []
 FEATURES_NUMBER = len(first_group[0])
 DATA_FOR_LEARNING_SIZE = 2050 #2050 from 1st and 2050 from 2nd
 MAX_NUMBER_STEPS = 8000 // BATCH_SIZE
@@ -998,51 +819,11 @@ MIN_LOSS = 3
 MATRIX_FEATURES = numpy.vstack((numpy.array(first_group), numpy.array(second_group)))
 MATRIX_ANSWERS = [1] * len(first_group) + [-1] * len(second_group)
 
-
-list_errors = []
-steps = 0
-w = numpy.array([random.random() for i in range(FEATURES_NUMBER)])
-learning_rate = 1
-logistic_loss = 1000000000000
-general_logistic_loss = MIN_LOSS + 100
-eps = 0.0001
-first_momentum = numpy.array([0] * FEATURES_NUMBER)
-second_momentum = numpy.zeros((FEATURES_NUMBER, FEATURES_NUMBER))
-FIRST_MOMENTUM_COEFF = 0.9
-SECOND_MOMENTUM_COEFF = 0.999
-first_coeff_powered = FIRST_MOMENTUM_COEFF
-second_coeff_powered = SECOND_MOMENTUM_COEFF
-while (steps < MAX_NUMBER_STEPS and general_logistic_loss > MIN_LOSS):
-    X = numpy.empty((BATCH_SIZE, 785))
-    Y = []
-    for i in range(0, BATCH_SIZE // 2):
-        index = (steps * BATCH_SIZE // 2 + i) % DATA_FOR_LEARNING_SIZE
-        X[i * 2] = numpy.array(first_group[index % len(first_group)])
-        Y.append(1)
-        X[i * 2 + 1] = numpy.array(second_group[index % len(second_group)])
-        Y.append(-1)
-    if (len(X) != BATCH_SIZE):
-        print("CRITICAL ERROR")
-        break
-    logistic_loss = calculate_logistic_func_error(w, X, Y)
-    gradient = numpy.array(get_logistic_func_derivative(w, X, Y))
-    first_momentum = first_momentum * FIRST_MOMENTUM_COEFF + gradient * (1 - FIRST_MOMENTUM_COEFF)
-    second_momentum = SECOND_MOMENTUM_COEFF * second_momentum + (1 - SECOND_MOMENTUM_COEFF) * (gradient.transpose() * gradient)
-    first_coeff_powered *= FIRST_MOMENTUM_COEFF
-    second_coeff_powered *= SECOND_MOMENTUM_COEFF
-    bias_corrected_first = first_momentum / (1 - first_coeff_powered)
-    new_w = copy.copy(w)
-    for i in range(0, len(w)):
-        new_w[i] -= learning_rate * bias_corrected_first[i] / (eps + math.sqrt(second_momentum[i][i] / (1 - second_coeff_powered)))
-    w = copy.copy(new_w)
-    logistic_loss = calculate_logistic_func_error(new_w, X, Y)
-    steps += 1
-    general_logistic_loss = get_count_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS)
-    #print(logistic_loss, learning_rate, general_logistic_loss)
-    list_errors.append(general_logistic_loss)
-print("Errors: ", general_logistic_loss, "/", len(first_group) + len(second_group))
-print("Used elements: ", steps * BATCH_SIZE)
-pyplot.plot([i for i in range(steps)], list_errors, "red")
+w, list_errors = adam(first_group, second_group, BATCH_SIZE, MAX_NUMBER_STEPS, 
+                     FEATURES_NUMBER, DATA_FOR_LEARNING_SIZE, MIN_LOSS, MATRIX_FEATURES, MATRIX_ANSWERS)
+print("Errors: ", get_number_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS), "/", len(first_group) + len(second_group))
+print("Used elements: ", len(list_errors) * BATCH_SIZE)
+pyplot.plot(list(range(len(list_errors))), list_errors, "red")
 pyplot.show()
 
 
