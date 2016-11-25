@@ -347,15 +347,16 @@ draw_line(w, MIN_X, MAX_X, '#00fa9a')
 print("Right answer: ", w, ";  err: ", rmse)
 
 #gradient descent
-w, loss_list1 = gradient_descent([1.4532, -1.245, 0.1057], X, Y, 1, 0.05, 100, 
-                                 calculate_rmse, get_gradient_for_rmse)
+w, loss_list1 = gradient_descent(w=[1.4532, -1.245, 0.1057], X=X, Y=Y, learning_rate=1, eps=0.05, max_number_iters=100, 
+                                 func=calculate_rmse, func_derivative=get_gradient_for_rmse)
 
 draw_line(w, MIN_X, MAX_X, "g")
 print("Gradient descent's answer: ", w, ";  err: ", loss_list1[-1])
 print("Steps: ", len(loss_list1))
 #steepest gradient descent
-w, loss_list2 = steepest_gradient([1.4532, -1.245, 0.1057], X, Y, 0.05, 20, 
-                                  calculate_rmse, get_gradient_for_rmse, get_optimal_learning_rate_rmse)
+w, loss_list2 = steepest_gradient(w=[1.4532, -1.245, 0.1057], X=X, Y=Y, eps=0.05, max_number_iters=20, 
+                                  func=calculate_rmse, func_derivative=get_gradient_for_rmse, 
+                                  func_minimize=get_optimal_learning_rate_rmse)
 draw_line(w, MIN_X, MAX_X, "yellow")
 print("Steepest gradient's answer: ", w, ";  err: ", loss_list2[-1])
 print("Steps: ", len(loss_list2))
@@ -511,9 +512,15 @@ EPS = 0.0001
 
 for batch_size in list_batch_size:
     print("Batch size: ", batch_size)
-    w, list_errors = stohastic_gradient_descent(first_group, second_group, batch_size, 8000 // batch_size,
-                                               FEATURES_NUMBER, DATA_FOR_LEARNING_SIZE, MIN_ERROR,
-                                               MATRIX_FEATURES, MATRIX_ANSWERS)
+    w, list_errors = stohastic_gradient_descent(first_group=first_group, 
+                                                second_group=second_group, 
+                                                batch_size = batch_size,
+                                                max_number_steps=8000//batch_size,
+                                                features_number=FEATURES_NUMBER, 
+                                                data_for_learning_size=DATA_FOR_LEARNING_SIZE, 
+                                                min_error=MIN_ERROR,
+                                                matrix_features=MATRIX_FEATURES, 
+                                                matrix_answers=MATRIX_ANSWERS)
     list_results.append(list_errors)
     print("Errors: ", get_number_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS), "/", len(first_group) + len(second_group))
     print("Used elements: ", len(list_errors) * batch_size)
@@ -669,7 +676,7 @@ pyplot.show()
 
 def stohastic_gradient_descent_simple(first_group, second_group, batch_size, max_number_steps,
                                       features_number, data_for_learning_size, min_error, matrix_features, matrix_answers,
-                                      learning_rate = 0.2, deceleration = 0.5, acceleration = 1.1):
+                                      learning_rate=0.2, deceleration=0.5, acceleration=1.1):
     list_errors = []
     steps = 0
     w = numpy.random.random(features_number)
@@ -698,7 +705,7 @@ def stohastic_gradient_descent_simple(first_group, second_group, batch_size, max
 
 def adagrad(first_group, second_group, batch_size, max_number_steps,
             features_number, data_for_learning_size, min_error, matrix_features, matrix_answers,
-            learning_rate = 1):
+            learning_rate=1):
     list_errors = []
     steps = 0
     G_matrix = numpy.zeros((features_number, features_number))
@@ -776,7 +783,7 @@ pyplot.show()
 
 def adam(first_group, second_group, batch_size, max_number_steps, 
          features_number, data_for_learning_size, min_error, matrix_features, matrix_answers, 
-         first_momentum_coeff = 0.9, second_momentum_coeff = 0.999, learning_rate = 1):
+         first_momentum_coeff=0.9, second_momentum_coeff=0.999, learning_rate=1):
     list_errors = []
     steps = 0
     w = numpy.random.random(features_number)
@@ -820,7 +827,7 @@ MATRIX_FEATURES = numpy.vstack((numpy.array(first_group), numpy.array(second_gro
 MATRIX_ANSWERS = [1] * len(first_group) + [-1] * len(second_group)
 
 w, list_errors = adam(first_group, second_group, BATCH_SIZE, MAX_NUMBER_STEPS, 
-                     FEATURES_NUMBER, DATA_FOR_LEARNING_SIZE, MIN_LOSS, MATRIX_FEATURES, MATRIX_ANSWERS)
+                      FEATURES_NUMBER, DATA_FOR_LEARNING_SIZE, MIN_LOSS, MATRIX_FEATURES, MATRIX_ANSWERS)
 print("Errors: ", get_number_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS), "/", len(first_group) + len(second_group))
 print("Used elements: ", len(list_errors) * BATCH_SIZE)
 pyplot.plot(list(range(len(list_errors))), list_errors, "red")
