@@ -3,7 +3,7 @@
 
 # # Лабораторная работа №1
 
-# In[2]:
+# In[1]:
 
 from matplotlib import pyplot, mlab
 import numpy
@@ -14,21 +14,21 @@ from scipy.optimize import minimize_scalar
 
 # **Точное решение задачи о разделении облаков**
 
-# In[88]:
+# In[2]:
 
-def create_clouds(POINTS_NUMBER):
+def create_clouds(points_number):
     MU_X_1 = -5
     MU_X_2 = 5
     MU_Y_1 = 3.5
     MU_Y_2 = -3
     SIGMA = 5
-    first_cloud = numpy.array([numpy.random.normal(MU_X_1, SIGMA, POINTS_NUMBER), 
-                               numpy.random.normal(MU_Y_1, SIGMA, POINTS_NUMBER),
-                               [1] * POINTS_NUMBER])
+    first_cloud = numpy.array([numpy.random.normal(MU_X_1, SIGMA, points_number), 
+                               numpy.random.normal(MU_Y_1, SIGMA, points_number),
+                               [1] * points_number])
     pyplot.scatter(first_cloud[0], first_cloud[1], 28, "red")
-    second_cloud = numpy.array([numpy.random.normal(MU_X_2, SIGMA, POINTS_NUMBER), 
-                                numpy.random.normal(MU_Y_2, SIGMA, POINTS_NUMBER),
-                                [1] * POINTS_NUMBER])
+    second_cloud = numpy.array([numpy.random.normal(MU_X_2, SIGMA, points_number), 
+                                numpy.random.normal(MU_Y_2, SIGMA, points_number),
+                                [1] * points_number])
     pyplot.scatter(second_cloud[0], second_cloud[1], 28, "blue")
     return first_cloud, second_cloud
 
@@ -117,7 +117,7 @@ pyplot.show()
 # 
 # Ниже приведен код, который находит минимум квадратичной функции $f(x,y)=2x^2+y^2+2$ с помощью градиентного спуска. Синим значением показаны линии уровня, красной линией - траектория при работе алгоритма. Значение $\lambda$ уменьшается в 2 раза, если алгоритм понимает, что перепрыгнул минимум.
 
-# In[55]:
+# In[4]:
 
 def f(x, y):
     return 2 * (x**2) + y**2 + 2
@@ -131,10 +131,10 @@ def y_derivative(x, y):
     return 2 * y
 
 
-def gradient_descent_simple(x, y, learning_rate, EPS, MAX_NUMBER_STEPS, deceleration = 0.5):
+def gradient_descent_simple(x, y, learning_rate, eps, max_number_iters, deceleration=0.5):
     trajectory = [[x], [y]]
     steps = 0
-    while learning_rate > EPS and steps < MAX_NUMBER_STEPS:
+    while learning_rate > eps and steps < max_number_iters:
         gradient = (x_derivative(x, y), y_derivative(x, y))
         x_new = x - learning_rate * gradient[0]
         y_new = y - learning_rate * gradient[1]
@@ -148,7 +148,7 @@ def gradient_descent_simple(x, y, learning_rate, EPS, MAX_NUMBER_STEPS, decelera
 
     
 trajectory, steps = gradient_descent_simple(x=3.3, y=7.1, learning_rate=0.3, 
-                                            EPS=0.001, MAX_NUMBER_STEPS=1000)
+                                            eps=0.001, max_number_iters=1000)
 print("Steps: ", steps)
 print("Final point: ", (trajectory[0][-1], trajectory[1][-1]))
 
@@ -281,7 +281,7 @@ def get_gradient_for_rmse(w, X, Y):
     return gradient
 
 
-# In[91]:
+# In[5]:
 
 def gradient_descent(w, X, Y, learning_rate, eps, max_number_iters, 
                      func, func_derivative, 
@@ -296,13 +296,13 @@ def gradient_descent(w, X, Y, learning_rate, eps, max_number_iters,
             break
         gradient /= numpy.linalg.norm(gradient)
         new_w = copy.copy(w) - learning_rate * gradient
-        new_RMSE = func(w, X, Y)
-        if (new_RMSE >= rmse):
+        new_rmse = func(w, X, Y)
+        if (new_rmse >= rmse):
             learning_rate *= deceleration
         else:
             learning_rate *= acceleration
         w = copy.copy(new_w)
-        rmse = new_RMSE
+        rmse = new_rmse
         loss_list.append(rmse)
         steps += 1
     return w, loss_list
@@ -481,7 +481,7 @@ def stohastic_gradient_descent(first_group, second_group, batch_size, max_number
     steps = 0
     w = numpy.random.random(features_number)
     general_error = min_error + 1 #this value allows use do execute 'while' below at least 1 time
-    while steps < max_number_steps and general_error > min_error: #means that there are used (BATCH_SIZE * MAX_NUMBER_OF_STEPS) % DATA_FOR_LEARNING_SIZE elems from data
+    while steps < max_number_steps and general_error > min_error: 
         X, Y = create_batch(first_group, second_group, batch_size, features_number, data_for_learning_size, steps)
         
         #logistic_loss = calculate_logistic_func(w, X, Y)
@@ -500,8 +500,8 @@ def stohastic_gradient_descent(first_group, second_group, batch_size, max_number
 first_group, second_group = load_data()
 print("Elems in 1st group:", len(first_group), ", in 2nd:", len(second_group))
 
-list_batch_size = [30, 70, 100, 150, 200, 300]
-list_colors = ["black", "blue", "green", "red", "magenta", "yellow"]
+LIST_BATCH_SIZE = [30, 70, 100, 150, 200, 300]
+LIST_COLORS = ["black", "blue", "green", "red", "magenta", "yellow"]
 list_results = []
 FEATURES_NUMBER = len(first_group[0])
 DATA_FOR_LEARNING_SIZE = 2050 #2050 for first group and 2050 from second
@@ -510,7 +510,7 @@ MATRIX_FEATURES = numpy.vstack((numpy.array(first_group), numpy.array(second_gro
 MATRIX_ANSWERS = [1] * len(first_group) + [-1] * len(second_group)
 EPS = 0.0001
 
-for batch_size in list_batch_size:
+for batch_size in LIST_BATCH_SIZE:
     print("Batch size: ", batch_size)
     w, list_errors = stohastic_gradient_descent(first_group=first_group, 
                                                 second_group=second_group, 
@@ -524,8 +524,8 @@ for batch_size in list_batch_size:
     list_results.append(list_errors)
     print("Errors: ", get_number_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS), "/", len(first_group) + len(second_group))
     print("Used elements: ", len(list_errors) * batch_size)
-for i in range(len(list_results)):
-    pyplot.plot([list_batch_size[i] * j for j in range(0, len(list_results[i]))], list_results[i], list_colors[i])
+for result, batch_size, color in zip(list_results, LIST_BATCH_SIZE, LIST_COLORS):
+    pyplot.plot([batch_size * j for j in range(len(result))], result, color)
 pyplot.show()
 
 
@@ -686,10 +686,8 @@ def stohastic_gradient_descent_simple(first_group, second_group, batch_size, max
         
         #logistic_loss = calculate_logistic_func(w, X, Y)
         gradient = logistic_func_derivative(w, X, Y)
-        new_w = copy.copy(w)
-        for i in range(0, len(w)):
-            new_w[i] -= learning_rate * gradient[i]
-        if (calculate_logistic_func(new_w, X, Y) >= logistic_loss):
+        new_w = w - learning_rate * gradient
+        if calculate_logistic_func(new_w, X, Y) >= logistic_loss:
             learning_rate *= deceleration
         else:
             learning_rate *= acceleration
@@ -739,20 +737,20 @@ FEATURES_NUMBER = len(first_group[0])
 DATA_FOR_LEARNING_SIZE = 2050 #2050 from 1st and 2050 from 2nd
 MAX_NUMBER_STEPS = 8000 // BATCH_SIZE
 MIN_LOSS = 3
-MATRIX_FEATURES = numpy.vstack((numpy.array(first_group), numpy.array(second_group)))
-MATRIX_ANSWERS = [1] * len(first_group) + [-1] * len(second_group)
+matrix_features = numpy.vstack((numpy.array(first_group), numpy.array(second_group)))
+matrix_answers = [1] * len(first_group) + [-1] * len(second_group)
 
 w, list_errors = stohastic_gradient_descent_simple(first_group, second_group, BATCH_SIZE, MAX_NUMBER_STEPS, 
                                                    FEATURES_NUMBER, DATA_FOR_LEARNING_SIZE, MIN_LOSS, 
-                                                   MATRIX_FEATURES, MATRIX_ANSWERS)
-print("Errors: ", get_number_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS), "/", len(first_group) + len(second_group))
+                                                   matrix_features, matrix_answers)
+print("Errors: ", get_number_errors(w, matrix_features, matrix_answers), "/", len(first_group) + len(second_group))
 print("Used elements: ", len(list_errors) * BATCH_SIZE)
 pyplot.plot(list(range(len(list_errors))), list_errors, "blue")
 
 w, list_errors = adagrad(first_group, second_group, BATCH_SIZE, MAX_NUMBER_STEPS,
                          FEATURES_NUMBER, DATA_FOR_LEARNING_SIZE, MIN_LOSS,
-                         MATRIX_FEATURES, MATRIX_ANSWERS)
-print("Errors: ", get_number_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS), "/", len(first_group) + len(second_group))
+                         matrix_features, matrix_answers)
+print("Errors: ", get_number_errors(w, matrix_features, matrix_answers), "/", len(first_group) + len(second_group))
 print("Used elements: ", len(list_errors) * BATCH_SIZE)
 pyplot.plot(list(range(len(list_errors))), list_errors, "red")
 pyplot.show()
