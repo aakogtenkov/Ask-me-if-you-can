@@ -199,7 +199,7 @@ def rosen_gradient(x, y):
 
 def updated_gradient_descent(x, y, learning_rate, eps, max_number_iters, 
                              func, func_x_derivative, func_y_derivative, 
-                             deceleration = 0.5, acceleration = 1.1):
+                             deceleration=0.5, acceleration=1.1):
     trajectory = [[x], [y]]
     steps = 0
     while learning_rate > eps and steps < max_number_iters:
@@ -220,7 +220,7 @@ def updated_gradient_descent(x, y, learning_rate, eps, max_number_iters,
 
 # In[72]:
 
-trajectory, steps = updated_gradient_descent(x=-3.05, y=2.05, learning_rate=1, EPS=0.000005, MAX_NUMBER_STEPS=100000, 
+trajectory, steps = updated_gradient_descent(x=-3.05, y=2.05, learning_rate=1, eps=0.000005, max_number_iters=100000, 
                                              func=rosen, func_x_derivative=rosen_x_derivative, 
                                              func_y_derivative=rosen_y_derivative)
                                             #x, y, learning_rate, eps, max_steps, func, df/dx, df/dy
@@ -228,12 +228,12 @@ pyplot.plot(trajectory[0], trajectory[1], "red")
 print("Ответ:", x, y)
 print("Количество шагов (в том числе и без переходов в новую точку, а просто с изменением скорости обучения):", steps)
 
-levels = [1, 5, 10]
+LEVELS = [1, 5, 10]
 grid_x = mlab.frange(-2.5, 2.5, 0.01)
 grid_y = mlab.frange(-0.3, 5, 0.05)
 grid_x, grid_y = numpy.meshgrid(grid_x, grid_y)
 grid_z = rosen(grid_x, grid_y)
-pyplot.contour(grid_x, grid_y, grid_z, levels, colors = "b")
+pyplot.contour(grid_x, grid_y, grid_z, LEVELS, colors="b")
 pyplot.show()
 
 
@@ -297,7 +297,7 @@ def gradient_descent(w, X, Y, learning_rate, eps, max_number_iters,
         gradient /= numpy.linalg.norm(gradient)
         new_w = copy.copy(w) - learning_rate * gradient
         new_rmse = func(w, X, Y)
-        if (new_rmse >= rmse):
+        if new_rmse >= rmse:
             learning_rate *= deceleration
         else:
             learning_rate *= acceleration
@@ -559,7 +559,7 @@ def get_optimal_learning_rate(x, y, gradient):
 
 # In[97]:
 
-def momentum_method(x, y, learning_rate, eps, max_number_iters, func, func_derivative, GAMMA=0.85):
+def momentum_method(x, y, learning_rate, eps, max_number_iters, func, func_derivative, gamma=0.85):
     list_error = [f(x, y)]
     steps = 0
     impulse = numpy.array([0, 0])
@@ -567,7 +567,7 @@ def momentum_method(x, y, learning_rate, eps, max_number_iters, func, func_deriv
         gradient = func_derivative(x, y)
         if numpy.linalg.norm(gradient)**2 < eps:
             break
-        impulse = GAMMA * impulse + learning_rate * gradient
+        impulse = gamma * impulse + learning_rate * gradient
         x -= impulse[0]
         y -= impulse[1]
         list_error.append(func(x, y))
@@ -604,7 +604,7 @@ pyplot.plot(range(5, len(list_error)), list_error[5:], "blue")
 pyplot.show()
 
 x, y, list_error = momentum_method(x=2, y=-33, learning_rate=0.01, eps=0.00005, max_number_iters=1000, 
-                                   func=f, func_derivative=f_gradient, GAMMA=0.85)
+                                   func=f, func_derivative=f_gradient, gamma=0.85)
 
 print("Ответ:", x, y)
 print("Количество шагов:", len(list_error))
@@ -624,7 +624,7 @@ pyplot.show()
 
 def nesterov_accelerated_gradient(x, y, learning_rate, eps, max_number_iters, 
                                   func, func_x_der, func_y_der, 
-                                  GAMMA=0.9):
+                                  gamma=0.9):
     list_error = [func(x, y)]
     steps = 0
     impulse = numpy.array([0, 0])
@@ -633,7 +633,7 @@ def nesterov_accelerated_gradient(x, y, learning_rate, eps, max_number_iters,
                                 func_y_der(x - impulse[0], y - impulse[1])])
         if numpy.linalg.norm(gradient)**2 < eps:
             break
-        impulse = GAMMA * impulse + learning_rate * gradient
+        impulse = gamma * impulse + learning_rate * gradient
         x -= impulse[0]
         y -= impulse[1]
         list_error.append(func(x, y))
@@ -710,7 +710,8 @@ def adagrad(first_group, second_group, batch_size, max_number_steps,
     w = numpy.random.random(features_number)
     general_logistic_loss = min_error + 1
     while steps < max_number_steps and general_logistic_loss > min_error:
-        X, Y = create_batch(first_group, second_group, batch_size, features_number, data_for_learning_size, steps)
+        X, Y = create_batch(first_group, second_group, batch_size, 
+                            features_number, data_for_learning_size, steps)
 
         #logistic_loss = calculate_logistic_func(w, X, Y)
         gradient = numpy.array(logistic_func_derivative(w, X, Y))
@@ -733,22 +734,22 @@ first_group, second_group = load_data()
 print(len(first_group), len(second_group))
 
 BATCH_SIZE = 100
-FEATURES_NUMBER = len(first_group[0])
+features_number = len(first_group[0])
 DATA_FOR_LEARNING_SIZE = 2050 #2050 from 1st and 2050 from 2nd
-MAX_NUMBER_STEPS = 8000 // BATCH_SIZE
+max_number_steps = 8000 // BATCH_SIZE
 MIN_LOSS = 3
 matrix_features = numpy.vstack((numpy.array(first_group), numpy.array(second_group)))
 matrix_answers = [1] * len(first_group) + [-1] * len(second_group)
 
-w, list_errors = stohastic_gradient_descent_simple(first_group, second_group, BATCH_SIZE, MAX_NUMBER_STEPS, 
-                                                   FEATURES_NUMBER, DATA_FOR_LEARNING_SIZE, MIN_LOSS, 
+w, list_errors = stohastic_gradient_descent_simple(first_group, second_group, BATCH_SIZE, max_number_steps, 
+                                                   features_number, DATA_FOR_LEARNING_SIZE, MIN_LOSS, 
                                                    matrix_features, matrix_answers)
 print("Errors: ", get_number_errors(w, matrix_features, matrix_answers), "/", len(first_group) + len(second_group))
 print("Used elements: ", len(list_errors) * BATCH_SIZE)
 pyplot.plot(list(range(len(list_errors))), list_errors, "blue")
 
-w, list_errors = adagrad(first_group, second_group, BATCH_SIZE, MAX_NUMBER_STEPS,
-                         FEATURES_NUMBER, DATA_FOR_LEARNING_SIZE, MIN_LOSS,
+w, list_errors = adagrad(first_group, second_group, BATCH_SIZE, max_number_steps,
+                         features_number, DATA_FOR_LEARNING_SIZE, MIN_LOSS,
                          matrix_features, matrix_answers)
 print("Errors: ", get_number_errors(w, matrix_features, matrix_answers), "/", len(first_group) + len(second_group))
 print("Used elements: ", len(list_errors) * BATCH_SIZE)
@@ -791,17 +792,20 @@ def adam(first_group, second_group, batch_size, max_number_steps,
     first_coeff_powered = first_momentum_coeff
     second_coeff_powered = second_momentum_coeff
     while steps < max_number_steps and general_logistic_loss > min_error:
-        X, Y = create_batch(first_group, second_group, batch_size, features_number, data_for_learning_size, steps)
+        X, Y = create_batch(first_group, second_group, batch_size, 
+                            features_number, data_for_learning_size, steps)
         #logistic_loss = calculate_logistic_func(w, X, Y)
         gradient = numpy.array(logistic_func_derivative(w, X, Y))
         first_momentum = first_momentum * first_momentum_coeff + gradient * (1 - first_momentum_coeff)
-        second_momentum = second_momentum_coeff * second_momentum + (1 - second_momentum_coeff) * (gradient.transpose() * gradient)
+        tmp = (1 - second_momentum_coeff) * (gradient.transpose() * gradient)
+        second_momentum = second_momentum_coeff * second_momentum + tmp
         first_coeff_powered *= first_momentum_coeff
         second_coeff_powered *= second_momentum_coeff
         bias_corrected_first = first_momentum / (1 - first_coeff_powered)
         new_w = copy.copy(w)
         for i in range(0, len(w)):
-            new_w[i] -= learning_rate * bias_corrected_first[i] / (eps + math.sqrt(second_momentum[i][i] / (1 - second_coeff_powered)))
+            tmp = (eps + math.sqrt(second_momentum[i][i] / (1 - second_coeff_powered)))
+            new_w[i] -= learning_rate * bias_corrected_first[i] / tmp
         w = copy.copy(new_w)
         #logistic_loss = calculate_logistic_func(new_w, X, Y)
         steps += 1
@@ -817,16 +821,16 @@ first_group, second_group = load_data()
 print(len(first_group), len(second_group))
 
 BATCH_SIZE = 100
-FEATURES_NUMBER = len(first_group[0])
+features_number = len(first_group[0])
 DATA_FOR_LEARNING_SIZE = 2050 #2050 from 1st and 2050 from 2nd
-MAX_NUMBER_STEPS = 8000 // BATCH_SIZE
+max_number_steps = 8000 // BATCH_SIZE
 MIN_LOSS = 3
-MATRIX_FEATURES = numpy.vstack((numpy.array(first_group), numpy.array(second_group)))
-MATRIX_ANSWERS = [1] * len(first_group) + [-1] * len(second_group)
+matrix_features = numpy.vstack((numpy.array(first_group), numpy.array(second_group)))
+matrix_answers = [1] * len(first_group) + [-1] * len(second_group)
 
-w, list_errors = adam(first_group, second_group, BATCH_SIZE, MAX_NUMBER_STEPS, 
-                      FEATURES_NUMBER, DATA_FOR_LEARNING_SIZE, MIN_LOSS, MATRIX_FEATURES, MATRIX_ANSWERS)
-print("Errors: ", get_number_errors(w, MATRIX_FEATURES, MATRIX_ANSWERS), "/", len(first_group) + len(second_group))
+w, list_errors = adam(first_group, second_group, BATCH_SIZE, max_number_steps, 
+                      features_number, DATA_FOR_LEARNING_SIZE, MIN_LOSS, matrix_features, matrix_answers)
+print("Errors: ", get_number_errors(w, matrix_features, matrix_answers), "/", len(first_group) + len(second_group))
 print("Used elements: ", len(list_errors) * BATCH_SIZE)
 pyplot.plot(list(range(len(list_errors))), list_errors, "red")
 pyplot.show()
