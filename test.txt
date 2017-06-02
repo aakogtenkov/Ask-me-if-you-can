@@ -1,0 +1,19 @@
+Daniel went to the bathroom.
+Mary moved to the kithen.
+Sandra journeyed to the park.
+Daniel moved to the bedroom.
+Mary moved to the bedroom.
+Sandra moved to the bedroom.
+Where is Daniel? bedroom
+
+Daniel went to the bathroom.
+Mary moved to the kithen.
+Sandra journeyed to the park.
+Sandra moved to the bedroom.
+Where is Daniel? bathroom
+
+Sandra moved to the bedroom.
+Mary travelled to the bedroom.
+Sandra went to the bathroom.
+Where is Mary? bedroom
+
