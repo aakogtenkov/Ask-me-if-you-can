@@ -259,7 +259,7 @@ class Model:
                     question_len = 0
                     c += BATCH_SIZE
                 s = input.readline()
-            print('Average loss:', average_loss / c)
+            print('Average accuracy:', average_loss / c)
             input.close()
             if flag == 'learn' and ep % freq_saving == 0:
                 self.save(filename + '_' + str(ep // freq_saving))
@@ -293,6 +293,8 @@ def main_func():
     file_gen_text = list()
     while True:
         if len(s) == 1 and s[0] == 'exit':
+            if model != None:
+                del model
             return 0
         elif (len(s) == 1 or len(s) == 2) and s[0] == 'help':
             if len(s) == 1:
@@ -449,11 +451,11 @@ def main_func():
                 fin.close()
                 print('\n', len(file_gen_text), "examples")
             randn = random.randint(0, len(file_gen_text) - 1)
-            print('\n', file_gen_text[randn].rstrip(), sep='')
-            print('QUESTION')
-            print(file_gen_question[randn].rstrip())
-            print('ANSWER')
-            print(file_gen_answer[randn].rstrip(), '\n')
+            text = file_gen_text[randn].split('\n')
+            for n_string in range(len(text)):
+                print(n_string, text[n_string])
+            print(file_gen_question[randn].rstrip(), end=' ')
+            print('Answer:', file_gen_answer[randn])
             s = input().rstrip()
             while s != 'e' and s != 'close' and s != 'exit' and s != 'c':
                 if s == 'a' or s == 'accept':
@@ -466,7 +468,7 @@ def main_func():
                     if model != None:
                         model.predict(batch_size=1, filename='tmp.tmp', d=d, flag='predict_write')
                         print()
-                        randn = random.randint(0, len(file_gen_text) - 1)
+                        #randn = random.randint(0, len(file_gen_text) - 1)
                     else:
                         print('ERROR: no model loaded.')
                 elif s == 'chq':
@@ -475,44 +477,31 @@ def main_func():
                 elif s == 'cha':
                     s = input().rstrip()
                     file_gen_answer[randn] = s
-                elif s == 'cht':
-                    text = file_gen_text[randn].split('\n')
-                    for n_string in range(len(text)):
-                        print(n_string, text[n_string])
-                    print(file_gen_question[randn].rstrip(), end = ' ')
-                    print('Answer:', file_gen_answer[randn].rstrip(), '\n')
-                    s = input().rstrip()
-                    while s != 'ok':
-                        s = s.split()
-                        if len(s) == 2:
-                            pos = max(0, int(s[1]))
-                            pos = min(len(text), pos)
-                            if s[0] == 'rm' and pos < len(text):
-                                text.pop(pos)
-                            elif s[0] == 'rm':
-                                print('Index out of range')
-                            elif (s[0] == 'add' or s[0] == 'ins') and pos <= len(text):
-                                s = input().rstrip()
-                                text.insert(pos, s)
-                            elif s[0] == 'add' or s[0] == 'ins':
-                                print('Index out of range')
-                            else:
-                                print('Unknown command')
-                        for n_string in range(len(text)):
-                            print(n_string, text[n_string])
-                        print(file_gen_question[randn].rstrip(), end = ' ')
-                        print('Answer:', file_gen_answer[randn].rstrip(), '\n')
+                elif len(s.split()) == 2:
+                    s = s.split()
+                    pos = max(0, int(s[1]))
+                    pos = min(len(text), pos)
+                    if s[0] == 'rm' and pos < len(text):
+                        text.pop(pos)
+                    elif s[0] == 'rm':
+                        print('Index out of range')
+                    elif (s[0] == 'add' or s[0] == 'ins') and pos <= len(text):
                         s = input().rstrip()
+                        text.insert(pos, s)
+                    elif s[0] == 'add' or s[0] == 'ins':
+                        print('Index out of range')
+                    else:
+                        print('Unknown command')
                     file_gen_text[randn] = '\n'.join(text) + '\n'
-                else:
+                elif s == 'd' or s == 'p':
                     randn = random.randint(0, len(file_gen_text) - 1)
-                print('\n', file_gen_text[randn].rstrip(), sep='')
-                print('QUESTION')
-                print(file_gen_question[randn].rstrip())
-                print('ANSWER')
-                print(file_gen_answer[randn].rstrip(), '\n')
+                    text = file_gen_text[randn].split('\n')
+                for n_string in range(len(text)):
+                    print(n_string, text[n_string])
+                print(file_gen_question[randn].rstrip(), end=' ')
+                print('Answer:', file_gen_answer[randn])
                 s = input().rstrip()
-        else:
+        elif len(s) > 0:
             print('Unknown command.')
         s = input().split()
 
